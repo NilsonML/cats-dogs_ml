@@ -1,0 +1,18 @@
+# Ваша локальная среда и данные
+venv/
+data/
+models/
+
+# Кэш Python (обязательно к удалению)
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Локальные переменные окружения (секреты, API-ключи)
+.env
+
+# Настройки вашей среды разработки (IDE)
+.idea/
+.vscode/
