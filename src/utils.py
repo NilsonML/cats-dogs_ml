@@ -1,15 +1,33 @@
 """
 utils.py - Вспомогательные функции.
 
+- set_seed: фиксация генераторов случайных чисел
 - save_model: сохранение модели
 - load_model: загрузка модели
 - save_metrics: сохранение метрик в CSV
 """
 
 import csv
+import random
 from pathlib import Path
 
+import numpy as np
 import torch
+
+
+def set_seed(seed: int) -> None:
+    """Фиксирует все генераторы случайных чисел, которые участвуют в обучении.
+
+    Без этого два запуска с одинаковым конфигом дают разную точность: по-разному
+    инициализируется новый fc-слой, перемешиваются батчи и выбираются аугментации.
+    Тогда нельзя понять, улучшило ли изменение модель или это просто шум.
+
+    Полный детерминизм на GPU требует ещё torch.use_deterministic_algorithms(True),
+    но это замедляет обучение; для сравнения экспериментов достаточно сидов.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)  # CPU и все GPU
 
 
 def save_model(model: torch.nn.Module, target_dir: str, model_name: str):
@@ -37,7 +55,9 @@ def save_model(model: torch.nn.Module, target_dir: str, model_name: str):
 
 def load_model(model: torch.nn.Module, model_path: str, device: torch.device):
     """Загружает веса в модель."""
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    # weights_only=True: загружаем только тензоры. Обычный torch.load использует pickle
+    # и может выполнить произвольный код из чужого файла.
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
     print(f"✅ Модель загружена: {model_path}")
     return model
 

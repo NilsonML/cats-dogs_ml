@@ -48,9 +48,14 @@ def create_transforms(image_size: int = 224):
     )
 
     # Трансформации для VAL (без аугментаций!)
+    # Resize до того же размера, что и в train, + центральный кроп. Раньше было
+    # Resize(224) без кропа: на train модель видела объекты в масштабе 256->224,
+    # а на val — весь кадр, сжатый до 224, то есть объекты мельче. Это расхождение
+    # масштабов между обучением и оценкой (train-test resolution discrepancy).
     val_transforms = transforms.Compose(
         [
-            transforms.Resize((image_size, image_size)),
+            transforms.Resize((image_size + 32, image_size + 32)),
+            transforms.CenterCrop((image_size, image_size)),
             transforms.ToTensor(),
             transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
         ]
@@ -65,6 +70,7 @@ def create_dataloader(
     batch_size: int = 32,
     num_workers: int = 4,
     image_size: int = 224,
+    pin_memory: bool = False,
 ):
     """
     Создает DataLoader'ы для train и val.
@@ -75,6 +81,8 @@ def create_dataloader(
         batch_size: сколько изображений в одном батче
         num_workers: сколько процессов для загрузки данных
         image_size: размер изображения
+        pin_memory: закреплять батчи в page-locked памяти. Ускоряет копирование
+            на GPU; на CPU бесполезно и даёт предупреждение -> включаем только с CUDA
 
     Возвращает:
         train_loader, val_loader, class_names
@@ -95,7 +103,7 @@ def create_dataloader(
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
-        pin_memory=True,
+        pin_memory=pin_memory,
     )
 
     val_loader = DataLoader(
@@ -103,7 +111,7 @@ def create_dataloader(
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
-        pin_memory=True,
+        pin_memory=pin_memory,
     )
 
     class_names = train_dataset.classes

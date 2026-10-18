@@ -1,32 +1,31 @@
 """
 train.py - Главный скрипт для обучения.
 
-Запуск:
+Запуск (из корня репозитория):
     python -m src.train
+    python -m src.train --epochs 3 --batch-size 64
 """
 
-import sys
+import argparse
 import time
-from pathlib import Path
 
 import torch
 import torch.nn as nn
 from torch.optim import Adam
 
-# Добавляем корень проекта в path
-sys.path.append(str(Path(__file__).parent.parent))
-
 from src.data_setup import create_dataloader
 from src.engine import evaluate, train_one_epoch
 from src.model import create_model
-from src.utils import save_metrics, save_model
+from src.utils import save_metrics, save_model, set_seed
 
 # ============================================================
 # КОНФИГУРАЦИЯ
 # ============================================================
 CONFIG = {
     "train_dir": "data/train",
-    "val_dir": "data/test",
+    # Было "data/test": такой папки prepare_data.py не создаёт (он делит на train/val),
+    # и обучение падало с FileNotFoundError на первом же шаге.
+    "val_dir": "data/val",
     "batch_size": 32,
     "num_workers": 4,
     "image_size": 224,
@@ -37,12 +36,34 @@ CONFIG = {
     "learning_rate": 1e-3,
     "weight_decay": 1e-4,
     "save_dir": "models",
+    "seed": 42,
     "device": "cuda" if torch.cuda.is_available() else "cpu",
 }
 
 
+def parse_args() -> argparse.Namespace:
+    """Переопределение самых частых параметров из командной строки,
+    чтобы для эксперимента не приходилось править код."""
+    parser = argparse.ArgumentParser(description="Cats vs Dogs: transfer learning на ResNet18")
+    parser.add_argument("--epochs", type=int, default=CONFIG["num_epochs"])
+    parser.add_argument("--batch-size", type=int, default=CONFIG["batch_size"])
+    parser.add_argument("--lr", type=float, default=CONFIG["learning_rate"])
+    parser.add_argument("--num-workers", type=int, default=CONFIG["num_workers"])
+    parser.add_argument("--seed", type=int, default=CONFIG["seed"])
+    return parser.parse_args()
+
+
 def main():
     """Главная функция обучения."""
+    args = parse_args()
+    CONFIG.update(
+        num_epochs=args.epochs,
+        batch_size=args.batch_size,
+        learning_rate=args.lr,
+        num_workers=args.num_workers,
+        seed=args.seed,
+    )
+    set_seed(CONFIG["seed"])
 
     print("=" * 60)
     print("🚀 CATS VS DOGS - TRAINING")
@@ -62,6 +83,7 @@ def main():
         batch_size=CONFIG["batch_size"],
         num_workers=CONFIG["num_workers"],
         image_size=CONFIG["image_size"],
+        pin_memory=CONFIG["device"] == "cuda",
     )
 
     print(f"✅ Классы: {class_names}")
