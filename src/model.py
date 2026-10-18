@@ -53,8 +53,3 @@ def create_model(
             param.requires_grad = True # отдаёт веса и смещение только последнего слоя (нового классификатора, который мы создали ранее)
     
     return model
-
-def load_checkpoint(model, checkpoint_path, device):
-    """Загружает веса модели из файла."""
-    model.load_state_dict(torch.load(checkpoint_path, map_location=device))
-    return model

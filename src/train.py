@@ -8,12 +8,7 @@ train.py - Главный скрипт для обучения.
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-from pathlib import Path
-import sys
 import time
-
-# Добавляем корень проекта в path
-sys.path.append(str(Path(__file__).parent.parent))
 
 from src.data_setup import create_dataloader
 from src.model import create_model
@@ -25,7 +20,7 @@ from src.utils import save_model, save_metrics
 # ============================================================
 CONFIG = {
     "train_dir": "data/train",
-    "val_dir": "data/test",
+    "val_dir": "data/val",       # prepare_data.py создаёт именно data/val (было data/test)
     "batch_size": 32,
     "num_workers": 4,
     "image_size": 224,

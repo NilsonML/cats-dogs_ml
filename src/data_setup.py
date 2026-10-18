@@ -52,8 +52,12 @@ def create_transforms(image_size: int = 224):
     ])
     
     # Трансформации для VAL (без аугментаций!)
+    # Тот же масштаб, что и в train: Resize до 256 и центральный кроп 224.
+    # Если на val просто сжать до 224, объекты будут крупнее, чем модель
+    # видела при обучении (там кроп 224 из 256) — лишний сдвиг распределения.
     val_transforms = transforms.Compose([
-        transforms.Resize((image_size, image_size)),
+        transforms.Resize((image_size + 32, image_size + 32)),
+        transforms.CenterCrop((image_size, image_size)),
         transforms.ToTensor(),
         transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
     ])
@@ -96,7 +100,7 @@ def create_dataloader(
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
-        pin_memory=True,
+        pin_memory=torch.cuda.is_available(),  # pin_memory полезен только при копировании на GPU
         )
     
     val_loader = DataLoader(
@@ -104,7 +108,7 @@ def create_dataloader(
             batch_size=batch_size,
             shuffle=False,
             num_workers=num_workers,
-            pin_memory=True,
+            pin_memory=torch.cuda.is_available(),
         )
     
     class_names = train_dataset.classes

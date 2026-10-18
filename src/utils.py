@@ -34,7 +34,9 @@ def save_model(model: torch.nn.Module, target_dir: str, model_name: str):
     
 def load_model(model: torch.nn.Module, model_path: str, device: torch.device):
     """Загружает веса в модель."""
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    # weights_only=True: загружаем только тензоры. Без него torch.load
+    # распаковывает произвольные pickle-объекты, а это исполнение чужого кода.
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
     print(f"✅ Модель загружена: {model_path}")
     return model
 
